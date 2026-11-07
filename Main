@@ -1,0 +1,60 @@
+import matplotlib.pyplot as plt
+
+
+def read_data(filename):
+    """Открывает файл (он лежит рядом с программой) и достаёт из него данные."""
+    rows = []
+    with open(filename, encoding="utf-8") as file:
+        for line in file:
+            nums = line.split("#")[0].replace(",", ".").split()
+            if nums:
+                rows.append([float(t) for t in nums])
+    xs, ys = rows[0], rows[1]                      # три узла и значения в них
+    points = [v for row in rows[2:] for v in row]  # точки, где нужно найти y
+    return xs, ys, points
+
+
+def solve_gauss(xs, ys):
+    """Решает систему a*x^2 + b*x + c = y методом Гаусса."""
+    m = [[x * x, x, 1, y] for x, y in zip(xs, ys)]
+    for i in range(3):
+        p = max(range(i, 3), key=lambda r: abs(m[r][i]))   # главный элемент
+        m[i], m[p] = m[p], m[i]
+        for r in range(i + 1, 3):
+            k = m[r][i] / m[i][i]
+            m[r] = [u - k * v for u, v in zip(m[r], m[i])]
+    c = m[2][3] / m[2][2]
+    b = (m[1][3] - m[1][2] * c) / m[1][1]
+    a = (m[0][3] - m[0][1] * b - m[0][2] * c) / m[0][0]
+    return a, b, c
+
+
+def parabola(x, a, b, c):
+    return a * x * x + b * x + c
+
+
+def draw(xs, ys, points, a, b, c):
+    lo, hi = min(xs + points), max(xs + points)
+    grid = [lo - 1 + (hi - lo + 2) * i / 200 for i in range(201)]
+    plt.plot(grid, [parabola(x, a, b, c) for x in grid], label="парабола")
+    plt.scatter(xs, ys, color="red", label="заданные точки", zorder=3)
+    plt.scatter(points, [parabola(x, a, b, c) for x in points], color="green",
+                marker="D", label="найденные значения", zorder=3)
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.show()
+
+
+def main():
+    filename = "input_parabolic.txt"        # имя файла с данными
+
+    xs, ys, points = read_data(filename)
+    a, b, c = solve_gauss(xs, ys)
+
+    print(f"y = {a:g}*x^2 + {b:g}*x + {c:g}")
+    for x in points:
+        print(f"y({x:g}) = {parabola(x, a, b, c):g}")
+    draw(xs, ys, points, a, b, c)
+
+
+main()
